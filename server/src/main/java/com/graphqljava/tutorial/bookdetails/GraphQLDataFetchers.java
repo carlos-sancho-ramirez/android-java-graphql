@@ -37,10 +37,7 @@ public class GraphQLDataFetchers {
                     "lastName", "Rice")
     );
 
-    private final ImmutableMap<String, String> people = new ImmutableMap.Builder<String, String>()
-            .put("alice@example.com", "Alice")
-            .put("bob@example.com", "Bob")
-            .build();
+    private final HashMap<String, String> people = new HashMap<>();
 
     public DataFetcher getBookByIdDataFetcher() {
         return dataFetchingEnvironment -> {
@@ -87,6 +84,19 @@ public class GraphQLDataFetchers {
         return env -> {
             Person person = env.getSource();
             return person.name;
+        };
+    }
+
+    public DataFetcher createPerson() {
+        return env -> {
+            final String email = env.getArgument("email");
+            final String name = env.getArgument("name");
+            if (email == null || name == null || people.containsKey(email)) {
+                return null;
+            }
+
+            people.put(email, name);
+            return new Person(email, name);
         };
     }
 }
