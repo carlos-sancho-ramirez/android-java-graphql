@@ -1,12 +1,11 @@
 package com.graphqljava.tutorial.bookdetails;
 
 import com.google.common.collect.ImmutableMap;
+import com.graphqljava.tutorial.bookdetails.models.Person;
 import graphql.schema.DataFetcher;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class GraphQLDataFetchers {
@@ -38,6 +37,11 @@ public class GraphQLDataFetchers {
                     "lastName", "Rice")
     );
 
+    private final ImmutableMap<String, String> people = new ImmutableMap.Builder<String, String>()
+            .put("alice@example.com", "Alice")
+            .put("bob@example.com", "Bob")
+            .build();
+
     public DataFetcher getBookByIdDataFetcher() {
         return dataFetchingEnvironment -> {
             String bookId = dataFetchingEnvironment.getArgument("id");
@@ -58,6 +62,31 @@ public class GraphQLDataFetchers {
                     .filter(author -> author.get("id").equals(authorId))
                     .findFirst()
                     .orElse(null);
+        };
+    }
+
+    public DataFetcher getAllPeople() {
+        return env -> {
+            final ArrayList<Person> list = new ArrayList<>();
+            for (String key : people.keySet()) {
+                list.add(new Person(key, people.get(key)));
+            }
+
+            return list;
+        };
+    }
+
+    public DataFetcher getPersonEmail() {
+        return env -> {
+            Person person = env.getSource();
+            return person.email;
+        };
+    }
+
+    public DataFetcher getPersonName() {
+        return env -> {
+            Person person = env.getSource();
+            return person.name;
         };
     }
 }
