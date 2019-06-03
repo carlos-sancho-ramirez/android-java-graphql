@@ -51,9 +51,11 @@ public class GraphQLProvider {
                 .type(newTypeWiring("Query")
                         .dataFetcher("bookById", graphQLDataFetchers.getBookByIdDataFetcher())
                         .dataFetcher("allPeople", graphQLDataFetchers.getAllPeople())
+                        .dataFetcher("allNotes", graphQLDataFetchers.getAllNotes())
                 )
                 .type(newTypeWiring("Mutation")
                         .dataFetcher("createPerson", graphQLDataFetchers.createPerson())
+                        .dataFetcher("createNote", graphQLDataFetchers.createNote())
                 )
                 .type(newTypeWiring("Book")
                         .dataFetcher("author", graphQLDataFetchers.getAuthorDataFetcher())
@@ -61,6 +63,9 @@ public class GraphQLProvider {
                 .type(newTypeWiring("Person")
                         .dataFetcher("email", graphQLDataFetchers.getPersonEmail())
                         .dataFetcher("name", graphQLDataFetchers.getPersonName())
+                )
+                .type(newTypeWiring("Note")
+                        .dataFetcher("author", graphQLDataFetchers.getNoteAuthor())
                 )
                 .build();
     }

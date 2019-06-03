@@ -1,10 +1,12 @@
 type Query {
   bookById(id: ID): Book
   allPeople: [Person!]!
+  allNotes: [Note!]!
 }
 
 type Mutation {
   createPerson(email: String!, name: String!): Person
+  createNote(title: String!, authorEmail: String!): Note
 }
 
 type Book {
@@ -23,4 +25,11 @@ type Author {
 type Person {
   email: String!
   name: String!
+}
+
+type Note {
+  id: ID!
+  title: String!
+  body: String
+  author: Person!
 }
