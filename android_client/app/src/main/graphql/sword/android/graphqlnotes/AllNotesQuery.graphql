@@ -1,0 +1,9 @@
+query AllNotesQuery {
+  allNotes {
+    id
+    title
+    author {
+      name
+    }
+  }
+}
