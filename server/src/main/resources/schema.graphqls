@@ -4,11 +4,6 @@ type Query {
   allNotes: [Note!]!
 }
 
-type Mutation {
-  createPerson(email: String!, name: String!): Person
-  createNote(title: String!, authorEmail: String!): Note
-}
-
 type Book {
   id: ID
   name: String
@@ -32,4 +27,14 @@ type Note {
   title: String!
   body: String
   author: Person!
+}
+
+type Mutation {
+  createPerson(email: String!, name: String!): Person
+  createNote(author: PersonInput!, title: String!, body: String): Note
+}
+
+input PersonInput {
+  email: String!
+  name: String!
 }

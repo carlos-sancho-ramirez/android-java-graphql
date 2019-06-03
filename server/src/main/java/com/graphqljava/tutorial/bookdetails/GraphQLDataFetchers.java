@@ -124,14 +124,22 @@ public class GraphQLDataFetchers {
 
     public DataFetcher createNote() {
         return env -> {
+            final HashMap<String, String> author = env.getArgument("author");
             final String title = env.getArgument("title");
-            final String authorEmail = env.getArgument("authorEmail");
-            if (title == null || authorEmail == null) {
+            final String body = env.getArgument("body");
+
+            if (title == null || author == null) {
                 return null;
             }
 
             final String newId = Integer.toString(++noteCount);
+            final String authorEmail = author.get("email");
+            if (!people.containsKey(authorEmail)) {
+                people.put(authorEmail, author.get("name"));
+            }
+
             final Note note = new Note(newId, title, authorEmail);
+            note.body = body;
             notes.put(newId, note);
 
             return note;
