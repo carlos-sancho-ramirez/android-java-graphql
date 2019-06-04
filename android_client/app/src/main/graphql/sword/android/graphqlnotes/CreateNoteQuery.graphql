@@ -1,0 +1,15 @@
+mutation CreateNote($title: String!) {
+  createNote(
+    author: {
+      email: "c@example.com"
+      name: "Charlie"
+    },
+    title: $title,
+  ) {
+    id
+    title
+    author {
+      name
+    }
+  }
+}
