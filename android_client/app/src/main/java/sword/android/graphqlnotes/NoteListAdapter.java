@@ -10,21 +10,21 @@ import java.util.List;
 
 final class NoteListAdapter extends BaseAdapter {
 
-    private final List<String> mTexts;
+    private final List<NoteEntry> mEntries;
     private LayoutInflater mInflater;
 
-    NoteListAdapter(List<String> texts) {
-        mTexts = texts;
+    NoteListAdapter(List<NoteEntry> entries) {
+        mEntries = entries;
     }
 
     @Override
     public int getCount() {
-        return mTexts.size();
+        return mEntries.size();
     }
 
     @Override
-    public String getItem(int position) {
-        return mTexts.get(position);
+    public NoteEntry getItem(int position) {
+        return mEntries.get(position);
     }
 
     @Override
@@ -43,7 +43,7 @@ final class NoteListAdapter extends BaseAdapter {
         }
 
         final TextView textView = view.findViewById(R.id.text);
-        textView.setText(mTexts.get(position));
+        textView.setText(mEntries.get(position).title);
 
         return view;
     }

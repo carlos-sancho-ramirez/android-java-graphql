@@ -1,0 +1,6 @@
+query NoteContentQuery($noteId: ID!) {
+  noteById(id: $noteId) {
+    title
+    body
+  }
+}

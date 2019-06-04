@@ -10,6 +10,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 
 import okhttp3.OkHttpClient;
 
-public final class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogInterface.OnClickListener, TextWatcher {
+public final class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogInterface.OnClickListener, TextWatcher, ListView.OnItemClickListener {
 
     private static ApolloClient mApolloClient;
 
@@ -67,6 +68,7 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         fab.setOnClickListener(this);
 
         mListView = findViewById(R.id.listView);
+        mListView.setOnItemClickListener(this);
 
         if (savedInstanceState != null) {
             mState = savedInstanceState.getInt(SavedKeys.STATE);
@@ -79,6 +81,12 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         else {
             queryAllNotes();
         }
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        final NoteEntry entry = (NoteEntry) mListView.getAdapter().getItem(position);
+        NoteActivity.open(this, entry.id);
     }
 
     private void displayCreateNoteDialog() {
@@ -122,9 +130,9 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         getApolloClient().query(AllNotesQuery.builder().build()).enqueue(new ApolloCall.Callback<AllNotesQuery.Data>() {
             @Override
             public void onResponse(@NotNull Response<AllNotesQuery.Data> response) {
-                final ArrayList<String> noteTitles = new ArrayList<>();
+                final ArrayList<NoteEntry> noteTitles = new ArrayList<>();
                 for (AllNotesQuery.AllNote note : response.data().allNotes()) {
-                    noteTitles.add(note.title());
+                    noteTitles.add(new NoteEntry(note.id(), note.title()));
                 }
 
                 final NoteListAdapter adapter = new NoteListAdapter(noteTitles);
