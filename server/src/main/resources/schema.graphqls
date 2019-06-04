@@ -1,7 +1,8 @@
 type Query {
-  bookById(id: ID): Book
   allPeople: [Person!]!
   allNotes: [Note!]!
+  bookById(id: ID): Book
+  noteById(id: ID!): Note
 }
 
 type Book {

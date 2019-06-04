@@ -38,11 +38,11 @@ public class GraphQLDataFetchers {
                     "lastName", "Rice")
     );
 
-    private final HashMap<String, String> people = new HashMap<>();
-    private final HashMap<String, Note> notes = new HashMap<>();
+    private final Map<String, String> people = new HashMap<>();
+    private final Map<String, Note> notes = new HashMap<>();
     private int noteCount = 0;
 
-    public DataFetcher getBookByIdDataFetcher() {
+    public DataFetcher getBookById() {
         return dataFetchingEnvironment -> {
             String bookId = dataFetchingEnvironment.getArgument("id");
             return books
@@ -53,7 +53,7 @@ public class GraphQLDataFetchers {
         };
     }
 
-    public DataFetcher getAuthorDataFetcher() {
+    public DataFetcher getAuthor() {
         return dataFetchingEnvironment -> {
             Map<String,String> book = dataFetchingEnvironment.getSource();
             String authorId = book.get("authorId");
@@ -106,6 +106,13 @@ public class GraphQLDataFetchers {
             Note note = env.getSource();
             final String email = note.authorEmail;
             return new Person(email, people.get(email));
+        };
+    }
+
+    public DataFetcher getNoteById() {
+        return env -> {
+            String noteId = env.getArgument("id");
+            return notes.get(noteId);
         };
     }
 
