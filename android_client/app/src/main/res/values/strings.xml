@@ -1,6 +1,16 @@
 <resources>
     <string name="appName">GraphQL Notes</string>
+
+    <string name="createNoteDialogTitle">Type the new note title</string>
+    <string name="deleteNoteDialogMessage">Are you sure that you would like to remove this note?</string>
+
+    <string name="createOption">Create</string>
+    <string name="cancelOption">Cancel</string>
     <string name="saveOption">Save</string>
+    <string name="deleteOption">Delete</string>
+
     <string name="noteSavedFeedback">Note saved</string>
+    <string name="noteDeletedFeedback">Note deleted</string>
+
     <string name="error">Something went wrong</string>
 </resources>

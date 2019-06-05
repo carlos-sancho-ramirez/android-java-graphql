@@ -2,6 +2,7 @@ package sword.android.graphqlnotes;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.StringRes;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -26,7 +27,7 @@ import java.util.ArrayList;
 
 import okhttp3.OkHttpClient;
 
-public final class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogInterface.OnClickListener, TextWatcher, ListView.OnItemClickListener {
+public final class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogInterface.OnClickListener, DialogInterface.OnCancelListener, TextWatcher, ListView.OnItemClickListener, ListView.OnItemLongClickListener {
 
     private static ApolloClient mApolloClient;
 
@@ -45,15 +46,18 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
     interface States {
         int READY = 0;
         int CREATING_NOTE = 1;
+        int DELETING_NOTE = 2;
     }
 
     interface SavedKeys {
-        String STATE = "st";
+        String DELETING_NOTE_ID = "dni";
         String PROPOSED_TITLE = "pt";
+        String STATE = "st";
     }
 
     private int mState;
     private String mProposedTitle;
+    private String mDeletingNoteId;
 
     private ListView mListView;
 
@@ -69,14 +73,19 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
 
         mListView = findViewById(R.id.listView);
         mListView.setOnItemClickListener(this);
+        mListView.setOnItemLongClickListener(this);
 
         if (savedInstanceState != null) {
             mState = savedInstanceState.getInt(SavedKeys.STATE);
             mProposedTitle = savedInstanceState.getString(SavedKeys.PROPOSED_TITLE);
+            mDeletingNoteId = savedInstanceState.getString(SavedKeys.DELETING_NOTE_ID);
         }
 
         if (mState == States.CREATING_NOTE) {
             displayCreateNoteDialog();
+        }
+        else if (mState == States.DELETING_NOTE) {
+            displayDeleteNoteDialog();
         }
         else {
             queryAllNotes();
@@ -89,11 +98,19 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         NoteActivity.open(this, entry.id);
     }
 
+    @Override
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        mDeletingNoteId = ((NoteEntry) mListView.getAdapter().getItem(position)).id;
+        mState = States.DELETING_NOTE;
+        displayDeleteNoteDialog();
+        return true;
+    }
+
     private void displayCreateNoteDialog() {
         final AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Type the new note title")
-                .setPositiveButton("Create", this)
-                .setNegativeButton("Cancel", this)
+                .setTitle(R.string.createNoteDialogTitle)
+                .setPositiveButton(R.string.createOption, this)
+                .setNegativeButton(R.string.cancelOption, this)
                 .setCancelable(false)
                 .create();
 
@@ -105,14 +122,31 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         dialog.show();
     }
 
+    private void displayDeleteNoteDialog() {
+        new AlertDialog.Builder(this)
+                .setMessage(R.string.deleteNoteDialogMessage)
+                .setPositiveButton(R.string.deleteOption, this)
+                .setOnCancelListener(this)
+                .create().show();
+    }
+
     @Override
     public void onClick(DialogInterface dialog, int which) {
         switch (which) {
             case DialogInterface.BUTTON_POSITIVE:
+                final int state = mState;
                 mState = States.READY;
-                final String title = mProposedTitle;
-                mProposedTitle = null;
-                createNote(title);
+
+                if (state == States.CREATING_NOTE) {
+                    final String title = mProposedTitle;
+                    mProposedTitle = null;
+                    createNote(title);
+                }
+                else if (state == States.DELETING_NOTE) {
+                    final String noteId = mDeletingNoteId;
+                    mDeletingNoteId = null;
+                    deleteNote(noteId);
+                }
                 break;
 
             case DialogInterface.BUTTON_NEGATIVE:
@@ -123,6 +157,16 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
                     queryAllNotes();
                 }
                 break;
+        }
+    }
+
+    @Override
+    public void onCancel(DialogInterface dialog) {
+        mState = States.READY;
+        mDeletingNoteId = null;
+
+        if (mListView.getAdapter() == null) {
+            queryAllNotes();
         }
     }
 
@@ -173,13 +217,39 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
 
             @Override
             public void onFailure(@NotNull ApolloException e) {
+                showFeedback(R.string.error);
+            }
+        });
+    }
+
+    private void deleteNote(String noteId) {
+        getApolloClient().mutate(DeleteNoteMutation.builder().noteId(noteId).build()).enqueue(new ApolloCall.Callback<DeleteNoteMutation.Data>() {
+            @Override
+            public void onResponse(@NotNull Response<DeleteNoteMutation.Data> response) {
                 runOnUiThread(new Runnable() {
 
                     @Override
                     public void run() {
-                        Toast.makeText(MainActivity.this, "Something went wrong", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, R.string.noteDeletedFeedback, Toast.LENGTH_SHORT).show();
+                        queryAllNotes();
                     }
                 });
+            }
+
+            @Override
+            public void onFailure(@NotNull ApolloException e) {
+                showFeedback(R.string.error);
+            }
+        });
+    }
+
+    private void showFeedback(@StringRes int text) {
+        final int toastText = text;
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                Toast.makeText(MainActivity.this, toastText, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -210,5 +280,6 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         super.onSaveInstanceState(outState);
         outState.putInt(SavedKeys.STATE, mState);
         outState.putString(SavedKeys.PROPOSED_TITLE, mProposedTitle);
+        outState.putString(SavedKeys.DELETING_NOTE_ID, mDeletingNoteId);
     }
 }
