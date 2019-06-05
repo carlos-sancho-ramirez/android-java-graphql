@@ -57,6 +57,7 @@ public class GraphQLProvider {
                 .type(newTypeWiring("Mutation")
                         .dataFetcher("createPerson", graphQLDataFetchers.createPerson())
                         .dataFetcher("createNote", graphQLDataFetchers.createNote())
+                        .dataFetcher("updateNote", graphQLDataFetchers.updateNote())
                 )
                 .type(newTypeWiring("Book")
                         .dataFetcher("author", graphQLDataFetchers.getAuthor())

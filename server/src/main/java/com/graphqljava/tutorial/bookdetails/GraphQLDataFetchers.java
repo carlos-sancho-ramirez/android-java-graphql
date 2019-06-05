@@ -131,7 +131,7 @@ public class GraphQLDataFetchers {
 
     public DataFetcher createNote() {
         return env -> {
-            final HashMap<String, String> author = env.getArgument("author");
+            final Map<String, String> author = env.getArgument("author");
             final String title = env.getArgument("title");
             final String body = env.getArgument("body");
 
@@ -149,6 +149,25 @@ public class GraphQLDataFetchers {
             note.body = body;
             notes.put(newId, note);
 
+            return note;
+        };
+    }
+
+    public DataFetcher updateNote() {
+        return env -> {
+            final String noteId = env.getArgument("noteId");
+            final String body = env.getArgument("body");
+
+            if (noteId == null) {
+                return null;
+            }
+
+            Note note = notes.get(noteId);
+            if (note == null) {
+                return null;
+            }
+
+            note.body = body;
             return note;
         };
     }
