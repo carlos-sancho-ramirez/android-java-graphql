@@ -171,4 +171,11 @@ public class GraphQLDataFetchers {
             return note;
         };
     }
+
+    public DataFetcher deleteNote() {
+        return env -> {
+            final String noteId = env.getArgument("noteId");
+            return (noteId != null)? notes.remove(noteId) : null;
+        };
+    }
 }

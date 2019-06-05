@@ -34,6 +34,7 @@ type Mutation {
   createPerson(email: String!, name: String!): Person
   createNote(author: PersonInput!, title: String!, body: String): Note
   updateNote(noteId: ID!, body: String): Note
+  deleteNote(noteId: ID!): Note
 }
 
 input PersonInput {
