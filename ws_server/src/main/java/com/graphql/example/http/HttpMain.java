@@ -13,10 +13,11 @@ import org.eclipse.jetty.servlet.ServletHolder;
  * <p>
  * More info can be found here : http://graphql.org/learn/serving-over-http/
  */
-@SuppressWarnings("unchecked")
 public class HttpMain {
 
-    private static final int PORT = 3000;
+    private static final String SERVLET_HOLDER_NAME = "graphql-ws";
+    private static final String PATH = "/graphql";
+    private static final int PORT = 8080;
 
     public static void main(String[] args) throws Exception {
         //
@@ -28,21 +29,11 @@ public class HttpMain {
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/");
 
-        ServletHolder stockTicker = new ServletHolder("ws-stockticker", StockTickerServlet.class);
-        servletContextHandler.addServlet(stockTicker, "/stockticker");
+        ServletHolder stockTicker = new ServletHolder(SERVLET_HOLDER_NAME, StockTickerServlet.class);
+        servletContextHandler.addServlet(stockTicker, PATH);
 
-        // this allows us to server our index.html and GraphIQL JS code
-        ResourceHandler resource_handler = new ResourceHandler();
-        resource_handler.setDirectoriesListed(false);
-        resource_handler.setWelcomeFiles(new String[]{"index.html"});
-        resource_handler.setResourceBase("./src/main/resources/httpmain");
-
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{resource_handler, servletContextHandler});
-        server.setHandler(handlers);
-
+        server.setHandler(servletContextHandler);
         server.start();
-
         server.join();
     }
 }

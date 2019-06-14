@@ -1,0 +1,29 @@
+type Query {
+  allPeople: [Person!]!
+  allNotes: [Note!]!
+  noteById(id: ID!): Note
+}
+
+type Person {
+  email: String!
+  name: String!
+}
+
+type Note {
+  id: ID!
+  title: String!
+  body: String
+  author: Person!
+}
+
+type Mutation {
+  createPerson(email: String!, name: String!): Person
+  createNote(author: PersonInput!, title: String!, body: String): Note
+  updateNote(noteId: ID!, body: String): Note
+  deleteNote(noteId: ID!): Note
+}
+
+input PersonInput {
+  email: String!
+  name: String!
+}
