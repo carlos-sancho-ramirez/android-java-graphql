@@ -3,9 +3,13 @@ package com.graphql.example.http;
 import com.graphql.example.http.models.Note;
 import com.graphql.example.http.models.Person;
 import graphql.schema.DataFetcher;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 public final class GraphQLDataFetchers {
@@ -13,6 +17,72 @@ public final class GraphQLDataFetchers {
     private final Map<String, String> people = new HashMap<>();
     private final Map<String, Note> notes = new HashMap<>();
     private int noteCount = 0;
+
+    private final ArrayList<Note> newNotes = new ArrayList<>();
+    private class NewNoteSubscription implements Subscription {
+
+        private final Subscriber<? super Note> subscriber;
+        private int lastEventIndex;
+        private int lastRequestedEventIndex;
+        private boolean canceled;
+
+        private NewNoteSubscription(Subscriber<? super Note> subscriber) {
+            this.subscriber = subscriber;
+            lastEventIndex = newNotes.size() - 1;
+            lastRequestedEventIndex = lastEventIndex;
+        }
+
+        @Override
+        public void request(long n) {
+            if (canceled) {
+                throw new UnsupportedOperationException("Subscription already canceled");
+            }
+
+            lastRequestedEventIndex += n;
+            deliverRequested();
+        }
+
+        private void deliverRequested() {
+            final int mostRecentNoteEvent = newNotes.size() - 1;
+            while (mostRecentNoteEvent > lastEventIndex && lastRequestedEventIndex > lastEventIndex) {
+                subscriber.onNext(newNotes.get(++lastEventIndex));
+            }
+
+            if (canceled && lastRequestedEventIndex == lastEventIndex) {
+                newNotePublisher.subscriptions.remove(this);
+                subscriber.onComplete();
+            }
+        }
+
+        @Override
+        public void cancel() {
+            canceled = true;
+            if (lastEventIndex == lastRequestedEventIndex) {
+                newNotePublisher.subscriptions.remove(this);
+                subscriber.onComplete();
+            }
+        }
+    }
+
+    private class NewNotePublisher implements Publisher<Note> {
+
+        private final HashSet<NewNoteSubscription> subscriptions = new HashSet<>();
+
+        @Override
+        public void subscribe(Subscriber<? super Note> s) {
+            final NewNoteSubscription subscription = new NewNoteSubscription(s);
+            subscriptions.add(subscription);
+            s.onSubscribe(subscription);
+        }
+
+        void notifyNewNotes() {
+            for (NewNoteSubscription subscription : subscriptions) {
+                subscription.deliverRequested();
+            }
+        }
+    }
+
+    private final NewNotePublisher newNotePublisher = new NewNotePublisher();
 
     public DataFetcher getAllPeople() {
         return env -> {
@@ -98,6 +168,9 @@ public final class GraphQLDataFetchers {
             note.body = body;
             notes.put(newId, note);
 
+            newNotes.add(note);
+            newNotePublisher.notifyNewNotes();
+
             return note;
         };
     }
@@ -126,5 +199,9 @@ public final class GraphQLDataFetchers {
             final String noteId = env.getArgument("noteId");
             return (noteId != null)? notes.remove(noteId) : null;
         };
+    }
+
+    public DataFetcher newNote() {
+        return env -> newNotePublisher;
     }
 }

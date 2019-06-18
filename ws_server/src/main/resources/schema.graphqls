@@ -23,6 +23,10 @@ type Mutation {
   deleteNote(noteId: ID!): Note
 }
 
+type Subscription {
+  newNote: Note!
+}
+
 input PersonInput {
   email: String!
   name: String!

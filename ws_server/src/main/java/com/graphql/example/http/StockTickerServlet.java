@@ -9,6 +9,8 @@ import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.tracing.TracingInstrumentation;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,6 +27,7 @@ import static java.util.Collections.singletonList;
  */
 public class StockTickerServlet extends WebSocketServlet {
 
+    private static final Logger log = LoggerFactory.getLogger(StockTickerServlet.class);
     private static GraphQL graphQL;
 
     static GraphQL getGraphQL() {
@@ -86,6 +89,7 @@ public class StockTickerServlet extends WebSocketServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         final String body = req.getReader().lines().collect(Collectors.joining("\n"));
+        log.info("Post received with content " + body);
         try {
             final String response = executeQuery(body);
             if (response == null) {
