@@ -19,9 +19,15 @@ import java.util.Map;
  */
 public class QueryParameters {
 
-    private String query;
-    private String operationName;
-    private Map<String, Object> variables = Collections.emptyMap();
+    private final String query;
+    private final String operationName;
+    private final Map<String, Object> variables;
+
+    private QueryParameters(String query, String operationName, Map<String, Object> variables) {
+        this.query = query;
+        this.operationName = operationName;
+        this.variables = variables;
+    }
 
     public String getQuery() {
         return query;
@@ -35,16 +41,6 @@ public class QueryParameters {
         return variables;
     }
 
-    public static QueryParameters from(String queryMessage) {
-        QueryParameters parameters = new QueryParameters();
-        Map<String, Object> json = JsonKit.toMap(queryMessage);
-        parameters.query = (String) json.get("query");
-        parameters.operationName = (String) json.get("operationName");
-        parameters.variables = getVariables(json.get("variables"));
-        return parameters;
-    }
-
-
     private static Map<String, Object> getVariables(Object variables) {
         if (variables instanceof Map) {
             Map<?, ?> inputVars = (Map) variables;
@@ -55,4 +51,18 @@ public class QueryParameters {
         return JsonKit.toMap(String.valueOf(variables));
     }
 
+    static QueryParameters from(Map<String, Object> json) {
+        if (json != null) {
+            final String query = (String) json.get("query");
+            final String operationName = (String) json.get("operationName");
+            final Map<String, Object> variables = getVariables(json.get("variables"));
+            return new QueryParameters(query, operationName, variables);
+        }
+
+        return null;
+    }
+
+    public static QueryParameters from(String queryMessage) {
+        return from(JsonKit.toMap(queryMessage));
+    }
 }

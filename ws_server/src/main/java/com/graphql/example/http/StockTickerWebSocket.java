@@ -2,12 +2,14 @@ package com.graphql.example.http;
 
 import com.graphql.example.http.utill.JsonComposer;
 import com.graphql.example.http.utill.QueryParameters;
+import com.graphql.example.http.utill.WebSocketParameters;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
 import graphql.execution.instrumentation.ChainedInstrumentation;
 import graphql.execution.instrumentation.Instrumentation;
 import graphql.execution.instrumentation.tracing.TracingInstrumentation;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.reactivestreams.Publisher;
@@ -51,59 +53,73 @@ public class StockTickerWebSocket extends WebSocketAdapter {
     public void onWebSocketText(String graphqlQuery) {
         log.info("Text received in " + this + ". Websocket said {}", graphqlQuery);
 
-        QueryParameters parameters = QueryParameters.from(graphqlQuery);
+        WebSocketParameters parameters = WebSocketParameters.from(graphqlQuery);
 
-        ExecutionInput executionInput = ExecutionInput.newExecutionInput()
-                .query(parameters.getQuery())
-                .variables(parameters.getVariables())
-                .operationName(parameters.getOperationName())
-                .build();
-
-        final Object data = StockTickerServlet.getGraphQL().execute(executionInput).getData();
-        if (data instanceof Publisher) {
-            final Publisher<ExecutionResult> publisher = (Publisher<ExecutionResult>) data;
-            publisher.subscribe(new Subscriber<ExecutionResult>() {
-
-                private Subscription subscription;
-
-                @Override
-                public void onSubscribe(Subscription s) {
-                    log.info("onSubscribe called in " + StockTickerWebSocket.this);
-                    subscription = s;
-                    s.request(1);
-                }
-
-                @Override
-                public void onNext(ExecutionResult executionResult) {
-                    log.info("onNext called in " + StockTickerWebSocket.this);
-                    try {
-                        final String resultText = JsonComposer.compose(executionResult.getData());
-                        log.info("  Returning {} [{}]", resultText, data.getClass().getName());
-                        getRemote().sendString(resultText);
-                        subscription.request(1);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void onError(Throwable t) {
-                    log.info("onError called in " + StockTickerWebSocket.this);
-                }
-
-                @Override
-                public void onComplete() {
-                    log.info("onComplete called in " + StockTickerWebSocket.this);
-                }
-            });
-        }
-        else if (data != null) {
+        if ("connection_init".equals(parameters.getType())) {
+            final String resultText = "{\"type\":\"connection_ack\"}";
             try {
-                final String resultText = JsonComposer.compose(data);
-                log.info("  Returning {} [{}]", resultText, data.getClass().getName());
                 getRemote().sendString(resultText);
-            } catch (Exception e) {
+                log.info("  Returned " + resultText);
+            } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+        else if ("start".equals(parameters.getType())) {
+            final QueryParameters payload = parameters.getPayload();
+            ExecutionInput executionInput = ExecutionInput.newExecutionInput()
+                    .query(payload.getQuery())
+                    .variables(payload.getVariables())
+                    .operationName(payload.getOperationName())
+                    .build();
+
+            final Object data = StockTickerServlet.getGraphQL().execute(executionInput).getData();
+            if (data instanceof Publisher) {
+                final Publisher<ExecutionResult> publisher = (Publisher<ExecutionResult>) data;
+                publisher.subscribe(new Subscriber<ExecutionResult>() {
+
+                    private Subscription subscription;
+
+                    @Override
+                    public void onSubscribe(Subscription s) {
+                        log.info("onSubscribe called in " + StockTickerWebSocket.this);
+                        subscription = s;
+                        s.request(1);
+                    }
+
+                    @Override
+                    public void onNext(ExecutionResult executionResult) {
+                        log.info("onNext called in " + StockTickerWebSocket.this);
+                        final RemoteEndpoint remote = getRemote();
+                        if (remote != null) {
+                            try {
+                                final String resultText = JsonComposer.compose(executionResult.getData());
+                                log.info("  Returning {} [{}]", resultText, data.getClass().getName());
+                                getRemote().sendString(resultText);
+                                subscription.request(1);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        log.info("onError called in " + StockTickerWebSocket.this);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        log.info("onComplete called in " + StockTickerWebSocket.this);
+                    }
+                });
+            } else if (data != null) {
+                try {
+                    final String resultText = JsonComposer.compose(data);
+                    log.info("  Returning {} [{}]", resultText, data.getClass().getName());
+                    getRemote().sendString(resultText);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
