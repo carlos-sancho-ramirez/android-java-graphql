@@ -18,6 +18,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -69,8 +70,10 @@ public class StockTickerServlet extends WebSocketServlet {
 
         Object data = getGraphQL().execute(executionInput).getData();
         if (data != null) {
+            final HashMap<String, Object> jsonMap = new HashMap<>();
+            jsonMap.put("data", data);
             try {
-                return JsonComposer.compose(data);
+                return JsonComposer.compose(jsonMap);
             } catch (Exception e) {
                 e.printStackTrace();
             }
