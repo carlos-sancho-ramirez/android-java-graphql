@@ -47,20 +47,13 @@ public final class GraphQLDataFetchers {
             while (mostRecentNoteEvent > lastEventIndex && lastRequestedEventIndex > lastEventIndex) {
                 subscriber.onNext(newNotes.get(++lastEventIndex));
             }
-
-            if (canceled && lastRequestedEventIndex == lastEventIndex) {
-                newNotePublisher.subscriptions.remove(this);
-                subscriber.onComplete();
-            }
         }
 
         @Override
         public void cancel() {
             canceled = true;
-            if (lastEventIndex == lastRequestedEventIndex) {
-                newNotePublisher.subscriptions.remove(this);
-                subscriber.onComplete();
-            }
+            newNotePublisher.subscriptions.remove(this);
+            subscriber.onComplete();
         }
     }
 
@@ -76,7 +69,7 @@ public final class GraphQLDataFetchers {
         }
 
         void notifyNewNotes() {
-            for (NewNoteSubscription subscription : subscriptions) {
+            for (NewNoteSubscription subscription : new ArrayList<>(subscriptions)) {
                 subscription.deliverRequested();
             }
         }

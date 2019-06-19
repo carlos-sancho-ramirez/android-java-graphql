@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -43,14 +44,23 @@ public class StockTickerWebSocket extends WebSocketAdapter {
         }
     }
 
+    private final HashMap<String, Subscription> subscriptionMap = new HashMap<>();
+
+    private interface WebSocketProtocolMessageTypes {
+        String CONNECTION_ACK = "connection_ack";
+        String CONNECTION_INIT = "connection_init";
+        String START = "start";
+        String STOP = "stop";
+    }
+
     @Override
     public void onWebSocketText(String graphqlQuery) {
         log.info("Text received in " + this + ". Websocket said {}", graphqlQuery);
 
         WebSocketParameters parameters = WebSocketParameters.from(graphqlQuery);
 
-        if ("connection_init".equals(parameters.getType())) {
-            final String resultText = "{\"type\":\"connection_ack\"}";
+        if (WebSocketProtocolMessageTypes.CONNECTION_INIT.equals(parameters.getType())) {
+            final String resultText = "{\"type\":\"" + WebSocketProtocolMessageTypes.CONNECTION_ACK + "\"}";
             try {
                 getRemote().sendString(resultText);
                 log.info("  Returned " + resultText);
@@ -58,7 +68,7 @@ public class StockTickerWebSocket extends WebSocketAdapter {
                 e.printStackTrace();
             }
         }
-        else if ("start".equals(parameters.getType())) {
+        else if (WebSocketProtocolMessageTypes.START.equals(parameters.getType())) {
             final QueryParameters payload = parameters.getPayload();
             ExecutionInput executionInput = ExecutionInput.newExecutionInput()
                     .query(payload.getQuery())
@@ -72,12 +82,10 @@ public class StockTickerWebSocket extends WebSocketAdapter {
                 final Publisher<ExecutionResult> publisher = (Publisher<ExecutionResult>) data;
                 publisher.subscribe(new Subscriber<ExecutionResult>() {
 
-                    private Subscription subscription;
-
                     @Override
                     public void onSubscribe(Subscription s) {
                         log.info("onSubscribe called in " + StockTickerWebSocket.this);
-                        subscription = s;
+                        subscriptionMap.put(subscriptionId, s);
                         s.request(1);
                     }
 
@@ -85,15 +93,14 @@ public class StockTickerWebSocket extends WebSocketAdapter {
                     public void onNext(ExecutionResult executionResult) {
                         log.info("onNext called in " + StockTickerWebSocket.this);
                         final RemoteEndpoint remote = getRemote();
-                        if (remote != null) {
+                        final Subscription subs = subscriptionMap.get(subscriptionId);
+                        if (remote != null && subs != null) {
                             try {
                                 final String resultText = JsonComposer.compose(executionResult.getData());
-                                //final String wrappedResult = "{\"type\":\"data\",\"id\":\"" + subscriptionId + "\", \"payload\":" + resultText + "}";
-                                //final String wrappedResult = "{\"type\":\"data\",\"id\":\"" + subscriptionId + "\", \"payload\":{\"data\":" + resultText + "}}";
                                 final String wrappedResult = "{\"type\":\"data\",\"id\":\"" + subscriptionId + "\", \"payload\":{\"data\":{\"newNote\":" + resultText + "}}}";
                                 log.info("  Returning {} [{}]", wrappedResult, data.getClass().getName());
                                 getRemote().sendString(wrappedResult);
-                                subscription.request(1);
+                                subs.request(1);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -118,6 +125,14 @@ public class StockTickerWebSocket extends WebSocketAdapter {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+        }
+        else if (WebSocketProtocolMessageTypes.STOP.equals(parameters.getType())) {
+            final String subscriptionId = parameters.getId();
+            final Subscription subscription = subscriptionMap.remove(subscriptionId);
+            if (subscription != null) {
+                log.info("  Canceling subscription for id {}", subscriptionId);
+                subscription.cancel();
             }
         }
     }
