@@ -28,6 +28,8 @@ import static java.util.Collections.singletonList;
  */
 public class StockTickerServlet extends WebSocketServlet {
 
+    private static final long WEBSOCKET_IDLE_TIMEOUT = 3 * 60 * 1000;
+
     private static final Logger log = LoggerFactory.getLogger(StockTickerServlet.class);
     private static GraphQL graphQL;
 
@@ -55,7 +57,7 @@ public class StockTickerServlet extends WebSocketServlet {
     @Override
     public void configure(WebSocketServletFactory factory) {
         factory.getPolicy().setMaxTextMessageBufferSize(1024 * 1024);
-        factory.getPolicy().setIdleTimeout(30 * 1000);
+        factory.getPolicy().setIdleTimeout(WEBSOCKET_IDLE_TIMEOUT);
         factory.register(StockTickerWebSocket.class);
     }
 

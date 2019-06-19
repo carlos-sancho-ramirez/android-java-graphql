@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -18,8 +19,10 @@ import android.widget.Toast;
 
 import com.apollographql.apollo.ApolloCall;
 import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.ApolloSubscriptionCall;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
+import com.apollographql.apollo.subscription.WebSocketSubscriptionTransport;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -30,6 +33,8 @@ import okhttp3.OkHttpClient;
 public final class MainActivity extends AppCompatActivity implements View.OnClickListener, DialogInterface.OnClickListener, DialogInterface.OnCancelListener, TextWatcher, ListView.OnItemClickListener, ListView.OnItemLongClickListener {
 
     private static ApolloClient mApolloClient;
+    private boolean mActivityResumed;
+    private ApolloSubscriptionCall<NewNoteSubscription.Data> mApolloNewNoteSubscription;
 
     public static ApolloClient getApolloClient() {
         if (mApolloClient == null) {
@@ -37,6 +42,7 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
             mApolloClient = ApolloClient.builder()
                     .serverUrl(ProjectConfig.SERVER_URL)
                     .okHttpClient(okHttpClient)
+                    .subscriptionTransportFactory(new WebSocketSubscriptionTransport.Factory(ProjectConfig.SERVER_URL, okHttpClient))
                     .build();
         }
 
@@ -89,6 +95,65 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         }
         else {
             queryAllNotes();
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mActivityResumed = true;
+        triggerNewNoteSubscription();
+    }
+
+    private final class NewNoteSubscriptionCallback implements ApolloSubscriptionCall.Callback<NewNoteSubscription.Data> {
+
+        private final ApolloSubscriptionCall<NewNoteSubscription.Data> mAttachedSubscription;
+
+        NewNoteSubscriptionCallback(ApolloSubscriptionCall<NewNoteSubscription.Data> subscription) {
+            mAttachedSubscription = subscription;
+        }
+
+        @Override
+        public void onResponse(@NotNull Response<NewNoteSubscription.Data> response) {
+            Log.i("MainActivity", "Subscription.onResponse triggered");
+            final NewNoteSubscription.NewNote newNote = response.data().newNote();
+            final NoteEntry entry = new NoteEntry(newNote.id, newNote.title);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    final NoteListAdapter adapter = (NoteListAdapter) mListView.getAdapter();
+                    if (mApolloNewNoteSubscription == mAttachedSubscription && adapter != null) {
+                        adapter.appendNote(entry);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onFailure(@NotNull ApolloException e) {
+            Log.i("MainActivity", "Subscription.onFailure triggered");
+        }
+
+        @Override
+        public void onCompleted() {
+            Log.i("MainActivity", "Subscription.onCompleted triggered");
+        }
+
+        @Override
+        public void onTerminated() {
+            Log.i("MainActivity", "Subscription.onTerminated triggered");
+        }
+
+        @Override
+        public void onConnected() {
+            Log.i("MainActivity", "Subscription.onConnected triggered");
+        }
+    }
+
+    private void triggerNewNoteSubscription() {
+        if (mActivityResumed && mListView.getAdapter() != null && mApolloNewNoteSubscription == null) {
+            mApolloNewNoteSubscription = getApolloClient().subscribe(NewNoteSubscription.builder().build());
+            mApolloNewNoteSubscription.execute(new NewNoteSubscriptionCallback(mApolloNewNoteSubscription));
         }
     }
 
@@ -185,6 +250,7 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
                     @Override
                     public void run() {
                         mListView.setAdapter(adapter);
+                        triggerNewNoteSubscription();
                     }
                 });
             }
@@ -273,6 +339,17 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
     @Override
     public void afterTextChanged(Editable s) {
         mProposedTitle = s.toString();
+    }
+
+    @Override
+    public void onPause() {
+        if (mApolloNewNoteSubscription != null) {
+            mApolloNewNoteSubscription.cancel();
+            mApolloNewNoteSubscription = null;
+        }
+        mActivityResumed = false;
+
+        super.onPause();
     }
 
     @Override

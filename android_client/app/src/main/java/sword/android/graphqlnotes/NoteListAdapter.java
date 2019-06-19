@@ -47,4 +47,9 @@ final class NoteListAdapter extends BaseAdapter {
 
         return view;
     }
+
+    public void appendNote(NoteEntry entry) {
+        mEntries.add(entry);
+        notifyDataSetChanged();
+    }
 }

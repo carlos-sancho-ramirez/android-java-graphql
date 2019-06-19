@@ -1,21 +1,7 @@
 type Query {
   allPeople: [Person!]!
   allNotes: [Note!]!
-  bookById(id: ID): Book
   noteById(id: ID!): Note
-}
-
-type Book {
-  id: ID
-  name: String
-  pageCount: Int
-  author: Author
-}
-
-type Author {
-  id: ID
-  firstName: String
-  lastName: String
 }
 
 type Person {
@@ -35,6 +21,10 @@ type Mutation {
   createNote(author: PersonInput!, title: String!, body: String): Note
   updateNote(noteId: ID!, body: String): Note
   deleteNote(noteId: ID!): Note
+}
+
+type Subscription {
+  newNote: Note!
 }
 
 input PersonInput {

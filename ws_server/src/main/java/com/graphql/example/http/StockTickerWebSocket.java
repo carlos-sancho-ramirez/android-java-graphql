@@ -73,6 +73,7 @@ public class StockTickerWebSocket extends WebSocketAdapter {
                     .build();
 
             final Object data = StockTickerServlet.getGraphQL().execute(executionInput).getData();
+            final String subscriptionId = parameters.getId();
             if (data instanceof Publisher) {
                 final Publisher<ExecutionResult> publisher = (Publisher<ExecutionResult>) data;
                 publisher.subscribe(new Subscriber<ExecutionResult>() {
@@ -93,8 +94,11 @@ public class StockTickerWebSocket extends WebSocketAdapter {
                         if (remote != null) {
                             try {
                                 final String resultText = JsonComposer.compose(executionResult.getData());
-                                log.info("  Returning {} [{}]", resultText, data.getClass().getName());
-                                getRemote().sendString(resultText);
+                                //final String wrappedResult = "{\"type\":\"data\",\"id\":\"" + subscriptionId + "\", \"payload\":" + resultText + "}";
+                                //final String wrappedResult = "{\"type\":\"data\",\"id\":\"" + subscriptionId + "\", \"payload\":{\"data\":" + resultText + "}}";
+                                final String wrappedResult = "{\"type\":\"data\",\"id\":\"" + subscriptionId + "\", \"payload\":{\"data\":{\"newNote\":" + resultText + "}}}";
+                                log.info("  Returning {} [{}]", wrappedResult, data.getClass().getName());
+                                getRemote().sendString(wrappedResult);
                                 subscription.request(1);
                             } catch (Exception e) {
                                 e.printStackTrace();
