@@ -1,14 +1,10 @@
 package com.graphql.example.http;
 
-import com.graphql.example.http.utill.JsonComposer;
-import com.graphql.example.http.utill.QueryParameters;
-import com.graphql.example.http.utill.WebSocketParameters;
+import com.graphql.example.http.util.JsonComposer;
+import com.graphql.example.http.util.QueryParameters;
+import com.graphql.example.http.util.WebSocketParameters;
 import graphql.ExecutionInput;
 import graphql.ExecutionResult;
-import graphql.GraphQL;
-import graphql.execution.instrumentation.ChainedInstrumentation;
-import graphql.execution.instrumentation.Instrumentation;
-import graphql.execution.instrumentation.tracing.TracingInstrumentation;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -20,8 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static java.util.Collections.singletonList;
 
 /**
  * A websocket object is created per browser client.  This is the main interface code between the backing

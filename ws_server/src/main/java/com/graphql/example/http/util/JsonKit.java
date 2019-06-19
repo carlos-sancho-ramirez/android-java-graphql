@@ -1,4 +1,4 @@
-package com.graphql.example.http.utill;
+package com.graphql.example.http.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

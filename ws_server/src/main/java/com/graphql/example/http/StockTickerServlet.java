@@ -1,7 +1,7 @@
 package com.graphql.example.http;
 
-import com.graphql.example.http.utill.JsonComposer;
-import com.graphql.example.http.utill.QueryParameters;
+import com.graphql.example.http.util.JsonComposer;
+import com.graphql.example.http.util.QueryParameters;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.execution.instrumentation.ChainedInstrumentation;
@@ -14,10 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 

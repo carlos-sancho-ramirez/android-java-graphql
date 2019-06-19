@@ -1,6 +1,5 @@
-package com.graphql.example.http.utill;
+package com.graphql.example.http.util;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 

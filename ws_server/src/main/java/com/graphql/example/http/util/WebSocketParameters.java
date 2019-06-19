@@ -1,4 +1,4 @@
-package com.graphql.example.http.utill;
+package com.graphql.example.http.util;
 
 import java.util.Map;
 
