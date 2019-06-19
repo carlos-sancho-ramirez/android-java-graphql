@@ -86,6 +86,12 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
             mProposedTitle = savedInstanceState.getString(SavedKeys.PROPOSED_TITLE);
             mDeletingNoteId = savedInstanceState.getString(SavedKeys.DELETING_NOTE_ID);
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mActivityResumed = true;
 
         if (mState == States.CREATING_NOTE) {
             displayCreateNoteDialog();
@@ -96,13 +102,6 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
         else {
             queryAllNotes();
         }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        mActivityResumed = true;
-        triggerNewNoteSubscription();
     }
 
     private final class NewNoteSubscriptionCallback implements ApolloSubscriptionCall.Callback<NewNoteSubscription.Data> {
@@ -261,7 +260,7 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
 
                     @Override
                     public void run() {
-                        Toast.makeText(MainActivity.this, "Something went wrong", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, R.string.error, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -276,7 +275,7 @@ public final class MainActivity extends AppCompatActivity implements View.OnClic
 
                     @Override
                     public void run() {
-                        queryAllNotes();
+                        Toast.makeText(MainActivity.this, R.string.noteCreatedFeedback, Toast.LENGTH_SHORT).show();
                     }
                 });
             }

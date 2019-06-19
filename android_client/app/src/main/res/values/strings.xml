@@ -9,6 +9,7 @@
     <string name="saveOption">Save</string>
     <string name="deleteOption">Delete</string>
 
+    <string name="noteCreatedFeedback">Note created</string>
     <string name="noteSavedFeedback">Note saved</string>
     <string name="noteDeletedFeedback">Note deleted</string>
 
